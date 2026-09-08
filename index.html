@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fabrizio Paparella — Senior Designer | Art Director</title>
+
+<!-- ============================================================
+     Griglia di progetti. Ogni cella è un mini-carosello del
+     progetto: clic a sinistra/destra o swipe L/R per scorrere le
+     immagini di quel lavoro. Angoli arrotondati. Immagini in B/N
+     che diventano a colori al passaggio del mouse. Il nome del
+     progetto è il link alla sua pagina.
+
+     PERSONALIZZAZIONE: modifica l'array PROJECTS nello <script> in
+     fondo (categoria, nome, link, elenco immagini).
+     Colori/font/raggio angoli: pannello :root qui sotto.
+     ============================================================ -->
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --bg:      #0b0b0b;
+    --fg:      #ededed;
+    --muted:   #8a8a8a;
+    --line:    rgba(255,255,255,.22);
+    --accent:  #e9553f;
+    --accent-fg:#111;
+    --ink:     rgba(0,0,0,.28);
+    --radius:  clamp(10px, 1.6vw, 18px);
+    --maxw:    1600px;
+    --pad:     clamp(14px, 3.2vw, 40px);
+    --dock-h:  56px;
+    --dock-gap:clamp(12px, 3vw, 22px);
+    --dock-maxw:1400px;
+    --font:    'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+  }
+
+  *{box-sizing:border-box; margin:0; padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--bg); color:var(--fg);
+    font-family:var(--font); font-size:16px; line-height:1.4;
+    -webkit-font-smoothing:antialiased; overflow-x:hidden;
+    padding-bottom:calc(var(--dock-h) + var(--dock-gap) * 2);
+  }
+  body.locked{overflow:hidden}
+  a{color:inherit; text-decoration:none}
+  img{display:block; width:100%; height:100%; object-fit:cover}
+  .wrap{max-width:var(--maxw); margin:0 auto; padding-inline:var(--pad)}
+
+  /* ---------- Header ---------- */
+  header{position:sticky; top:0; z-index:50; background:var(--bg); border-bottom:1px solid var(--line)}
+  .bar{display:flex; align-items:center; justify-content:space-between; gap:16px; padding-block:13px}
+  .brand{font-weight:700; letter-spacing:.02em; font-size:15px}
+  .roles{display:flex; gap:clamp(14px, 4vw, 56px); font-size:13px; color:var(--muted)}
+  .roles span{white-space:nowrap}
+  @media (max-width:680px){ .roles{display:none} }
+
+  /* ---------- Mosaico ---------- */
+  .mosaic{
+    display:grid; grid-template-columns:repeat(2, 1fr);
+    gap:clamp(8px, 1.4vw, 16px);
+    margin:clamp(16px,4vw,44px) 0 clamp(40px,8vh,90px);
+  }
+  @media (max-width:560px){ .mosaic{grid-template-columns:1fr} }
+
+  .tile{
+    position:relative; aspect-ratio:3/2; overflow:hidden;
+    border-radius:var(--radius); background:#161616;
+    cursor:pointer; user-select:none; touch-action:pan-y; isolation:isolate;
+  }
+  .tile:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+
+  .tile .slides{display:flex; height:100%; transition:transform .5s cubic-bezier(.2,.7,.2,1); will-change:transform}
+  .tile .slides.dragging{transition:none}
+  .tile .slides img,
+  .tile .slides video{
+    min-width:100%; width:100%; height:100%; object-fit:cover; z-index:1;
+    display:block; pointer-events:none; -webkit-user-drag:none;
+  }
+
+  .tile .label{
+    position:absolute; inset:0; z-index:3;
+    display:flex; flex-direction:column; justify-content:flex-end;
+    gap:5px; padding:clamp(12px,1.4vw,20px); pointer-events:none;
+    background:linear-gradient(to top, rgba(0,0,0,.72), rgba(0,0,0,.08) 54%, transparent);
+    transition:opacity .3s ease;
+  }
+  /* tipologia + nome visibili solo sulla prima immagine del carosello */
+  .tile.hide-label .label{opacity:0}
+  .tile .cat{font-size:11px; text-transform:uppercase; letter-spacing:.14em; font-weight:700; color:rgba(255,255,255,.82)}
+  .tile .name{font-size:clamp(1.05rem, 1.9vw, 1.7rem); font-weight:500; line-height:1.1}
+  .tile .name-btn{
+    pointer-events:auto; background:none; border:0; color:inherit; font:inherit; cursor:pointer;
+    padding:0; text-align:left; border-bottom:1px solid transparent; transition:border-color .2s;
+  }
+  .tile .name-btn:hover{border-color:var(--fg)}
+
+  /* pannello descrizione (fondo arancione, sopra la prima foto) */
+  .tile .desc{
+    position:absolute; inset:0; z-index:6;
+    background:var(--accent); color:var(--accent-fg);
+    padding:clamp(14px,2.2vw,26px);
+    display:flex; flex-direction:column; gap:.35em; overflow:auto;
+    animation:descIn .28s ease;
+  }
+  .tile .desc[hidden]{display:none}
+  @keyframes descIn{from{opacity:0; transform:translateY(10px)} to{opacity:1; transform:translateY(0)}}
+  .tile .desc .cat{color:rgba(0,0,0,.55)}
+  .tile .desc h3{font-size:clamp(1.05rem,1.9vw,1.6rem); font-weight:500; line-height:1.1}
+  .tile .desc p{font-size:clamp(.92rem,1.35vw,1.08rem); line-height:1.5; max-width:52ch}
+  .tile .desc-close{
+    margin-top:auto; align-self:flex-start;
+    background:none; border:1px solid var(--ink); color:inherit; font:inherit;
+    font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.1em;
+    padding:7px 12px; cursor:pointer; border-radius:999px;
+  }
+  .tile .desc-close:hover{background:rgba(0,0,0,.1)}
+
+  .tile .dots{position:absolute; z-index:4; top:10px; right:12px; display:flex; gap:6px}
+  .tile .dots button{
+    width:6px; height:6px; padding:0; border:0; border-radius:999px;
+    background:rgba(255,255,255,.45); cursor:pointer; transition:background .2s, transform .2s;
+  }
+  .tile .dots button.on{background:#fff; transform:scale(1.15)}
+
+  .tile .arrow{
+    position:absolute; z-index:2; top:50%; transform:translateY(-50%);
+    color:#fff; font-size:26px; line-height:1; opacity:0; transition:opacity .2s;
+    pointer-events:none; text-shadow:0 1px 8px rgba(0,0,0,.55);
+  }
+  .tile .arrow.l{left:12px}
+  .tile .arrow.r{right:12px}
+  @media (hover:hover){ .tile:hover .arrow{opacity:.9} }
+
+  /* ---------- Dock arancione (bottone stondato, poco meno della finestra) ---------- */
+  .dock{
+    position:fixed; left:0; right:0; bottom:0; z-index:100;
+    display:flex; justify-content:center;
+    padding:0 var(--dock-gap) var(--dock-gap);
+    pointer-events:none;
+  }
+  .dock > *{pointer-events:auto}
+
+  .dock-bar{
+    display:flex; width:100%; max-width:var(--dock-maxw); height:var(--dock-h);
+    background:var(--accent); color:var(--accent-fg);
+    border-radius:999px; overflow:hidden;
+    box-shadow:0 12px 36px rgba(0,0,0,.42);
+  }
+  .dock-bar button{
+    position:relative; flex:1; height:100%;
+    background:none; border:0; color:inherit; font:inherit;
+    font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.12em;
+    padding-inline:clamp(14px,4vw,40px); cursor:pointer;
+    display:flex; align-items:center; justify-content:space-between; gap:8px;
+  }
+  .dock-bar button:not(:last-child)::after{
+    content:""; position:absolute; right:0; top:50%; transform:translateY(-50%);
+    width:1px; height:42%; background:rgba(0,0,0,.45);
+  }
+  .dock-bar button:hover{background:rgba(0,0,0,.09)}
+  .dock-bar button .sign{font-weight:400}
+  @media (max-width:560px){ .dock-bar button{font-size:10px; letter-spacing:.05em; padding-inline:16px} }
+
+  .dock-full{
+    display:none; width:100%; max-width:var(--dock-maxw); max-height:82vh; overflow:auto;
+    background:var(--accent); color:var(--accent-fg);
+    border-radius:26px; box-shadow:0 18px 50px rgba(0,0,0,.45);
+  }
+  .dock--open .dock-full{display:block; animation:dockUp .42s cubic-bezier(.2,.7,.2,1)}
+  .dock--open .dock-bar{display:none}
+  @keyframes dockUp{from{opacity:.35; transform:translateY(28px)} to{opacity:1; transform:translateY(0)}}
+
+  .dock-topbar{
+    position:sticky; top:0; z-index:5; background:var(--accent);
+    display:flex; justify-content:flex-end; padding:14px 0 10px;
+    border-radius:26px 26px 0 0;
+  }
+  .dock-close{
+    background:none; border:1px solid var(--ink); color:inherit; font:inherit;
+    font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.1em;
+    padding:8px 14px; cursor:pointer; border-radius:999px;
+  }
+  .dock-close:hover{background:rgba(0,0,0,.1)}
+
+  .acc{padding-block:clamp(4px,1.5vw,14px) clamp(24px,6vh,60px)}
+  .acc-item{border-top:1px solid var(--ink)}
+  .acc-item:last-child{border-bottom:1px solid var(--ink)}
+  .acc-head{
+    width:100%; background:none; border:0; color:inherit; font:inherit; cursor:pointer; text-align:left;
+    display:flex; align-items:center; justify-content:space-between; gap:20px;
+    padding-block:clamp(.16em,1.3vw,.3em);
+    font-size:clamp(2rem, 8vw, 6rem); font-weight:500; letter-spacing:-.02em; line-height:1;
+  }
+  .acc-head .sign{font-weight:400; font-size:.42em; line-height:1}
+  .acc-body{max-height:0; overflow:hidden; transition:max-height .4s ease}
+  .acc-item.open .acc-body{max-height:60vh}
+  .acc-body .inner{padding:.2em 0 clamp(1.4em,4vw,2.4em); max-width:62ch; font-size:clamp(1rem, 2.2vw, 1.4rem); line-height:1.45}
+  .acc-body .inner.wide{max-width:none}
+  .acc-body .inner p + p{margin-top:.9em}
+  .acc-body ul{list-style:none; margin-top:.3em}
+  .acc-body li{display:flex; justify-content:space-between; gap:16px; padding-block:.55em; border-bottom:1px solid rgba(0,0,0,.22)}
+  .acc-body li:first-child{border-top:1px solid rgba(0,0,0,.22)}
+  .acc-body li .num{opacity:.5; font-size:.8em}
+  .acc-body .links{display:flex; flex-wrap:wrap; gap:8px 32px; margin-top:1em}
+  .acc-body .links a{border-bottom:1px solid rgba(0,0,0,.4); padding-bottom:2px; transition:opacity .2s}
+  .acc-body .links a:hover{opacity:.55}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap bar">
+    <!-- SOSTITUISCI: nome / ruoli -->
+    <a href="#" class="brand">FABRIZIO PAPARELLA</a>
+    <nav class="roles">
+      <span>Senior Designer</span>
+      <span>Art Director</span>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="mosaic" id="mosaic"><!-- generato da PROJECTS --></section>
+</main>
+
+<!-- ============ DOCK ARANCIONE ============ -->
+<div class="dock" id="dock">
+
+  <div class="dock-full">
+    <div class="wrap">
+      <div class="dock-topbar">
+        <button type="button" class="dock-close" id="dockClose">Chiudi ✕</button>
+      </div>
+      <div class="acc">
+        <div class="acc-item" data-id="chi">
+          <button type="button" class="acc-head">Chi sono <span class="sign">+</span></button>
+          <div class="acc-body"><div class="inner">
+            <!-- SOSTITUISCI: bio -->
+            <p>Art Director, Brand Designer, creativo.</p>
+            <p>Costruire identità non scontate e dare forma pensieri coerenti sono la mia quotidianità.</p>
+            <p>Da più di dieci anni nel mondo del branding, continuo a ricercare solidità, standing e vivacità in ogni progetto.</p>
+            <p>Curioso per natura, porto avanti anche progetti indipendenti, tra cui MEMPO, la mia produzione artigianale di borse da bikepackinge outdoor.</p>
+        </div></div>
+        </div>
+        <div class="acc-item" data-id="cosa">
+          <button type="button" class="acc-head">Cosa faccio <span class="sign">+</span></button>
+          <div class="acc-body"><div class="inner wide">
+            <ul>
+              <li><span>Branding</span><span class="num">01</span></li>
+              <li><span>Visual identity</span><span class="num">02</span></li>
+              <li><span>Art direction</span><span class="num">03</span></li>
+              <li><span>Packaging</span><span class="num">04</span></li>
+              <li><span>Brand consulting</span><span class="num">05</span></li>
+            </ul>
+          </div></div>
+        </div>
+        <div class="acc-item" data-id="scrivimi">
+          <button type="button" class="acc-head">Scrivimi <span class="sign">+</span></button>
+          <div class="acc-body"><div class="inner">
+            <div class="links">
+              <!-- SOSTITUISCI: recapiti -->
+              <a href="mailto:fabrizio.paparella@gmail.com">fabrizio.paparella@gmail.com</a>
+              <a href="https://instagram.com/enclair" target="_blank" rel="noopener">Instagram</a>
+              <a href="https://linkedin.com/in/fabriziopaparella" target="_blank" rel="noopener">LinkedIn</a>
+              <a href="https://behance.net/fabriziopaparella" target="_blank" rel="noopener">Behance</a>
+            </div>
+          </div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="dock-bar">
+    <button type="button" data-id="chi">Chi sono <span class="sign">+</span></button>
+    <button type="button" data-id="cosa">Cosa faccio <span class="sign">+</span></button>
+    <button type="button" data-id="scrivimi">Scrivimi <span class="sign">+</span></button>
+  </div>
+
+</div>
+
+<script>
+  /* ====== PROGETTI — modifica qui ======
+     imgs: elenco media del progetto (2+ = carosello). Ogni voce può essere:
+        • una stringa immagine:  'foto.jpg'
+        • una stringa video:     'clip.mp4'  (.mp4 .webm .ogv .mov)
+        • un oggetto video:      { video:'clip.mp4', poster:'anteprima.jpg' }
+     I video partono in autoplay (muti, in loop) solo quando sono la slide attiva.
+     desc: testo che si apre (fondo arancione) cliccando il titolo. */
+  const PROJECTS = [
+    { cat:'Packaging', name:'Saclà',
+      desc:'Rebranding del sistema packaging per accompagnare il passaggio da brand locale a marca globale, unificando le identità sviluppate nei diversi mercati sotto un&#39;unica voce. </br></br> La Corona, simbolo storico del marchio, è stata trasformata in un holding device iconico e universale capace di accogliere ogni ricetta, dal pesto al sottaceto, unificando i due universi Orto e Cucina.',
+      imgs:[{ video:'https://github.com/enclair-jrnl/portfolio/raw/refs/heads/main/images/sacla-packaging/01-sacla.mp4'},'https://github.com/enclair-jrnl/portfolio/blob/main/images/sacla-packaging/02-sacla.webp?raw=true','https://github.com/enclair-jrnl/portfolio/blob/main/images/sacla-packaging/03-sacla.webp?raw=true','https://github.com/enclair-jrnl/portfolio/blob/main/images/sacla-packaging/04-sacla.webp?raw=true','https://github.com/enclair-jrnl/portfolio/blob/main/images/sacla-packaging/05-sacla.webp?raw=true','https://github.com/enclair-jrnl/portfolio/blob/main/images/sacla-packaging/06-sacla.webp?raw=true',{ video:'https://github.com/enclair-jrnl/portfolio/raw/refs/heads/main/images/sacla-packaging/07-sacla.mp4'}] },
+    { cat:'Identity', name:'Saclà',
+      desc:'Nuovo posizionamento e identità visiva per accompagnare il passaggio da brand rilevante mercato per mercato a masterbrand globale, con una sola voce riconoscibile.</br></br> Dall&#39;insight che il gusto è prima di tutto un modo di vivere, nasce il ruolo del brand come compagno in cucina che arricchisce di gusto la quotidianità.</br>Un linguaggio visivo vibrante e contemporaneo, tra heritage e nuovi codici di premiumness.',
+      imgs:[{ video:'https://github.com/enclair-jrnl/portfolio/raw/refs/heads/main/images/sacla-identity/01-sacla-id.mp4'},'https://github.com/enclair-jrnl/portfolio/blob/main/images/sacla-identity/02-sacla-id.webp?raw=true','https://github.com/enclair-jrnl/portfolio/blob/main/images/sacla-identity/03-sacla-id.webp?raw=true','https://github.com/enclair-jrnl/portfolio/blob/main/images/sacla-identity/04-sacla-id.webp?raw=true','https://github.com/enclair-jrnl/portfolio/blob/main/images/sacla-identity/05-sacla-id.webp?raw=true'] },
+  ];
+
+  /* ====== Render mosaico ====== */
+  const VIDEO_RE = /\.(mp4|webm|ogv|mov)(\?|#|$)/i;
+  const isVideo = m => (typeof m === 'object') ? !!(m.video || m.src && VIDEO_RE.test(m.src)) : VIDEO_RE.test(m);
+  function mediaTag(m, name, k){
+    if (isVideo(m)){
+      const src = (typeof m === 'object') ? (m.video || m.src) : m;
+      const poster = (typeof m === 'object' && m.poster) ? ` poster="${m.poster}"` : '';
+      return `<video src="${src}"${poster} muted loop playsinline preload="metadata" aria-label="${name} — video ${k+1}"></video>`;
+    }
+    const src = (typeof m === 'object') ? (m.img || m.src) : m;
+    return `<img src="${src}" alt="${name} — immagine ${k+1}" loading="lazy">`;
+  }
+
+  const mosaic = document.getElementById('mosaic');
+  mosaic.innerHTML = PROJECTS.map(p => `
+    <article class="tile" tabindex="0" aria-roledescription="carosello progetto" aria-label="${p.name}">
+      <div class="slides">
+        ${(p.media || p.imgs).map((m,k) => mediaTag(m, p.name, k)).join('')}
+      </div>
+      <span class="arrow l" aria-hidden="true">‹</span>
+      <span class="arrow r" aria-hidden="true">›</span>
+      <div class="dots" role="tablist"></div>
+      <div class="label">
+        <span class="cat">${p.cat}</span>
+        <span class="name"><button type="button" class="name-btn" aria-expanded="false">${p.name}</button></span>
+      </div>
+      <div class="desc" hidden>
+        <span class="cat">${p.cat}</span>
+        <h3>${p.name}</h3>
+        <p>${p.desc || ''}</p>
+        <button type="button" class="desc-close">Chiudi ✕</button>
+      </div>
+    </article>`).join('');
+
+  /* ====== Carosello + descrizione per ogni cella ====== */
+  document.querySelectorAll('.tile').forEach(tile => {
+    const slides   = tile.querySelector('.slides');
+    const n        = slides.children.length;
+    const dotsWrap = tile.querySelector('.dots');
+    const nameBtn  = tile.querySelector('.name-btn');
+    const desc     = tile.querySelector('.desc');
+    const descClose= tile.querySelector('.desc-close');
+    let i = 0;
+
+    /* -- video: riproduci solo la slide attiva -- */
+    function pauseVideos(){ slides.querySelectorAll('video').forEach(v => v.pause()); }
+    function syncVideos(){
+      if (!desc.hidden) return;
+      [...slides.children].forEach((el, k) => {
+        if (el.tagName !== 'VIDEO') return;
+        if (k === i){ const pr = el.play(); if (pr) pr.catch(() => {}); }
+        else el.pause();
+      });
+    }
+    tile._sync = syncVideos;
+
+    /* -- descrizione (fondo arancione sopra la prima foto) -- */
+    function openDesc(){
+      i = 0; if (n > 1) render();                          // torna alla prima foto
+      pauseVideos();
+      desc.hidden = false;
+      nameBtn.setAttribute('aria-expanded', 'true');
+    }
+    function closeDesc(){
+      desc.hidden = true;
+      nameBtn.setAttribute('aria-expanded', 'false');
+      syncVideos();
+    }
+    nameBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      desc.hidden ? openDesc() : closeDesc();
+    });
+    descClose.addEventListener('click', e => { e.stopPropagation(); closeDesc(); });
+    desc.addEventListener('pointerdown', e => e.stopPropagation());
+
+    /* -- carosello -- */
+    if (n <= 1){
+      dotsWrap.remove();
+      tile.querySelectorAll('.arrow').forEach(a => a.remove());
+      syncVideos();
+      return;
+    }
+
+    const dots = [];
+    for (let k = 0; k < n; k++){
+      const b = document.createElement('button');
+      b.type = 'button'; b.setAttribute('aria-label', `Immagine ${k+1}`);
+      b.addEventListener('click', ev => { ev.stopPropagation(); go(k); });
+      dotsWrap.appendChild(b); dots.push(b);
+    }
+    function render(){
+      slides.style.transform = `translateX(${-i * 100}%)`;
+      dots.forEach((d,k) => d.classList.toggle('on', k === i));
+      tile.classList.toggle('hide-label', i !== 0);   // label solo sulla prima immagine
+      syncVideos();
+    }
+    function go(m){ i = (m + n) % n; render(); }
+    render();
+
+    let sx = 0, dx = 0, drag = false, moved = false;
+    const w = () => tile.clientWidth;
+
+    tile.addEventListener('pointerdown', e => {
+      if (!desc.hidden || e.target.closest('.name') || e.target.closest('.dots')) return;
+      drag = true; moved = false; sx = e.clientX; dx = 0;
+      slides.classList.add('dragging');
+      tile.setPointerCapture(e.pointerId);
+    });
+    tile.addEventListener('pointermove', e => {
+      if (!drag) return;
+      dx = e.clientX - sx;
+      if (Math.abs(dx) > 5){ moved = true; tile.classList.add('hide-label'); }
+      slides.style.transform = `translateX(${-i * w() + dx}px)`;
+    });
+    const end = e => {
+      if (!drag) return;
+      drag = false; slides.classList.remove('dragging');
+      const th = Math.min(80, w() * 0.15);
+      if (moved && dx <= -th)      go(i + 1);
+      else if (moved && dx >=  th) go(i - 1);
+      else if (!moved){
+        const r = tile.getBoundingClientRect();
+        (e.clientX - r.left < r.width / 2) ? go(i - 1) : go(i + 1);
+      } else render();
+    };
+    tile.addEventListener('pointerup', end);
+    tile.addEventListener('pointercancel', end);
+    tile.addEventListener('keydown', e => {
+      if (!desc.hidden){ if (e.key === 'Escape'){ closeDesc(); } return; }
+      if (e.key === 'ArrowLeft'){ e.preventDefault(); go(i - 1); }
+      if (e.key === 'ArrowRight'){ e.preventDefault(); go(i + 1); }
+    });
+    window.addEventListener('resize', render);
+  });
+
+  /* ferma i video quando la cella esce dallo schermo, riprendi quando rientra */
+  if ('IntersectionObserver' in window){
+    const io = new IntersectionObserver(entries => {
+      entries.forEach(en => {
+        if (en.isIntersecting) en.target._sync && en.target._sync();
+        else en.target.querySelectorAll('video').forEach(v => v.pause());
+      });
+    }, { threshold: 0.25 });
+    document.querySelectorAll('.tile').forEach(t => io.observe(t));
+  }
+
+  /* ====== Dock ====== */
+  const dock     = document.getElementById('dock');
+  const barBtns  = dock.querySelectorAll('.dock-bar button');
+  const accItems = dock.querySelectorAll('.acc-item');
+  const accHeads = dock.querySelectorAll('.acc-head');
+  const closeBtn = document.getElementById('dockClose');
+
+  function openItem(id){
+    accItems.forEach(it => {
+      const on = it.dataset.id === id;
+      it.classList.toggle('open', on);
+      it.querySelector('.sign').textContent = on ? '–' : '+';
+    });
+  }
+  function openDock(id){
+    dock.classList.add('dock--open');
+    document.body.classList.add('locked');
+    openItem(id);
+    dock.querySelector('.dock-full').scrollTop = 0;
+  }
+  function closeDock(){
+    dock.classList.remove('dock--open');
+    document.body.classList.remove('locked');
+    accItems.forEach(it => { it.classList.remove('open'); it.querySelector('.sign').textContent = '+'; });
+  }
+  barBtns.forEach(b => b.addEventListener('click', () => openDock(b.dataset.id)));
+  accHeads.forEach(h => h.addEventListener('click', () => {
+    const item = h.closest('.acc-item');
+    openItem(item.classList.contains('open') ? null : item.dataset.id);
+  }));
+  closeBtn.addEventListener('click', closeDock);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDock(); });
+</script>
+
+</body>
+</html>
